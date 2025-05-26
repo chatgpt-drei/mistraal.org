@@ -282,12 +282,12 @@ const OPENROUTER_API_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const AVAILABLE_MODELS: AIModel[] = [
   // Gemini model removed
   {
-    id: 'mistral-small',
-    name: 'Mistral Small',
-    provider: 'mistral',
-    modelIdentifier: 'mistral-small-latest',
-    apiKey: 'Y9njH3YFiG0DHsEjT0vWdNFv8rEWjCsY',
-    apiEndpoint: 'https://api.mistral.ai/v1/chat/completions',
+    id: 'qwen/qwq-32b:free',
+    name: 'Qwen3 235B ',
+    provider: 'openrouter',
+    modelIdentifier: 'qwen/qwq-32b:free',
+    apiKey: OPENROUTER_API_KEY,
+    apiEndpoint: OPENROUTER_API_ENDPOINT,
     supportsImages: false,
     supportsSystemInstruction: 'inline',
     supportsDeepSearch: false,
