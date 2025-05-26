@@ -179,7 +179,7 @@ const AVAILABLE_MODELS: AIModel[] = [
     name: 'Gemini 2.5 Pro', // Updated name
     provider: 'gemini',
     modelIdentifier: 'gemini-2.5-pro-exp-03-25', // Corrected model identifier
-    apiKey: 'AIzaSyBnJbPivMct0EMQ9-IMVq8e_mwxgOk85_s', // Gemini API key will be sourced from process.env.API_KEY
+    apiKey: 'AIzaSyDk0QBl2div7ZrmZD2ECqP5F3IYHHic55g', // Gemini API key will be sourced from process.env.API_KEY
     apiEndpoint: '', 
     supportsImages: true,
     supportsSystemInstruction: 'config',
