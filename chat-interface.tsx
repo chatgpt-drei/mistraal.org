@@ -180,7 +180,7 @@ const AVAILABLE_MODELS: AIModel[] = [
     provider: 'gemini',
     modelIdentifier: 'gemini-2.5-pro-exp-03-25', // Corrected model identifier to a valid one from guidelines
     apiKey: 'AIzaSyBnJbPivMct0EMQ9-IMVq8e_mwxgOk85_s', // Gemini API key will be sourced from process.env.API_KEY
-    apiEndpoint: '', 
+    apiEndpoint: 'https://generativelanguage.googleapis.com', 
     supportsImages: true,
     supportsSystemInstruction: 'config',
     supportsDeepSearch: true,
