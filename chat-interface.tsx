@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react"
 import {
   Search,
@@ -14,7 +13,7 @@ import {
   ThumbsDown,
   Check,
   XCircle,
-  Square, 
+  Square,
   ChevronDown, // Added for dropdown
 } from "lucide-react"
 import { GoogleGenAI, Content, Part, GenerateContentResponse as GeminiGenerateContentResponse } from "@google/genai";
@@ -39,13 +38,13 @@ function cn(...classes: (string | undefined | null | false | Record<string, bool
 }
 
 type ActiveButton = "none" | "deepSearch" | "think"
-type MessageType = "user" | "system" 
+type MessageType = "user" | "system"
 
 interface Attachment {
   id: string;
   name: string;
   type: string;
-  dataUrl: string; 
+  dataUrl: string;
 }
 
 interface Message {
@@ -165,7 +164,7 @@ interface AIModel {
   name: string;
   provider: 'gemini' | 'mistral' | 'cohere';
   modelIdentifier: string;
-  apiKey: string; // For Mistral/Cohere; For Gemini, process.env.API_KEY will be used
+  apiKey: string; // For Mistral/Cohere; For Gemini, this will be the specified key
   apiEndpoint: string;
   supportsImages: boolean;
   supportsSystemInstruction: boolean | 'inline' | 'preamble' | 'config';
@@ -179,8 +178,8 @@ const AVAILABLE_MODELS: AIModel[] = [
     name: 'Gemini 2.5 Pro', // Updated name
     provider: 'gemini',
     modelIdentifier: 'gemini-2.5-pro-exp-03-25', // Corrected model identifier to a valid one from guidelines
-    apiKey: 'AIzaSyBnJbPivMct0EMQ9-IMVq8e_mwxgOk85_s', // Gemini API key will be sourced from process.env.API_KEY
-    apiEndpoint: 'https://generativelanguage.googleapis.com', 
+    apiKey: 'AIzaSyBnJbPivMct0EMQ9-IMVq8e_mwxgOk85_s', // This specific API key will be used for Gemini
+    apiEndpoint: 'https://generativelanguage.googleapis.com',
     supportsImages: true,
     supportsSystemInstruction: 'config',
     supportsDeepSearch: true,
@@ -195,7 +194,7 @@ const AVAILABLE_MODELS: AIModel[] = [
     apiEndpoint: 'https://api.mistral.ai/v1/chat/completions',
     supportsImages: false,
     supportsSystemInstruction: 'inline',
-    supportsDeepSearch: false, 
+    supportsDeepSearch: false,
     supportsThinkingConfig: false,
   },
   {
@@ -245,7 +244,7 @@ const messagesToGeminiContents = (messagesToConvert: Message[]): Content[] => {
             role: msg.type === "user" ? "user" : "model",
             parts: parts,
         };
-    }).filter(content => content.parts.length > 0); 
+    }).filter(content => content.parts.length > 0);
 };
 
 // Helper to format messages for Mistral
@@ -314,7 +313,7 @@ async function* streamSSE(response: Response) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    
+
     const lines = buffer.split("\n\n");
     buffer = lines.pop() || ""; // Keep the last partial line in buffer
 
@@ -354,7 +353,7 @@ async function* streamJSONLines(response: Response) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    
+
     let newlineIndex;
     while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
       const line = buffer.substring(0, newlineIndex).trim();
@@ -368,7 +367,7 @@ async function* streamJSONLines(response: Response) {
       }
     }
   }
-  if (buffer.trim()) { 
+  if (buffer.trim()) {
      try {
         yield JSON.parse(buffer.trim());
      } catch (e) {
@@ -399,7 +398,7 @@ export default function ChatInterface() {
   const mainContainerRef = useRef<HTMLDivElement>(null)
   const selectionStateRef = useRef<{ start: number | null; end: number | null }>({ start: null, end: null })
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const stopStreamingRef = useRef(false); 
+  const stopStreamingRef = useRef(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -552,7 +551,7 @@ export default function ChatInterface() {
       }
     }
   }
-  
+
   const generateApiResponse = async (allMessages: Message[], currentModel: AIModel) => {
     stopStreamingRef.current = false;
     const messageId = `system-${Date.now()}`;
@@ -565,30 +564,9 @@ export default function ChatInterface() {
         if (navigator.vibrate) setTimeout(() => navigator.vibrate(30), 200);
 
         if (currentModel.provider === 'gemini') {
-            let geminiApiKeyFromEnv: string | undefined = undefined;
-
-            // Safely access process.env.API_KEY
-            if (typeof process !== 'undefined' && 
-                typeof process.env !== 'undefined' && 
-                typeof process.env.API_KEY === 'string' &&
-                process.env.API_KEY.trim() !== '') {
-                geminiApiKeyFromEnv = process.env.API_KEY;
-            }
-
-            if (!geminiApiKeyFromEnv) {
-                const errorMsg = `Gemini API key (from process.env.API_KEY) is missing or not accessible in this browser environment. Please ensure it is properly configured and made available, for example, through build-time substitution.`;
-                console.error(errorMsg);
-                accumulatedContent = errorMsg; 
-                setMessages((prev) => prev.map((msg) => msg.id === messageId ? { ...msg, content: accumulatedContent, completed: true } : msg));
-                setCompletedMessages((prev) => new Set(prev).add(messageId));
-                setIsStreaming(false);
-                setStreamingMessageId(null);
-                shouldFocusAfterStreamingRef.current = true;
-                stopStreamingRef.current = false; 
-                return; 
-            }
-
-            const geminiAi = new GoogleGenAI({ apiKey: geminiApiKeyFromEnv });
+            // Use the API key defined in the model configuration (currentModel.apiKey)
+            // This key is 'AIzaSyBnJbPivMct0EMQ9-IMVq8e_mwxgOk85_s' for Gemini, as per instructions.
+            const geminiAi = new GoogleGenAI({ apiKey: currentModel.apiKey });
             const contentsForApi = messagesToGeminiContents(allMessages);
             const config: any = {};
              if (currentModel.supportsSystemInstruction === 'config' && GEMINI_SYSTEM_INSTRUCTION) {
@@ -597,7 +575,7 @@ export default function ChatInterface() {
             if (currentModel.supportsThinkingConfig && activeButton === 'think') {
                  // Default is enabled for 'gemini-2.5-flash-preview-04-17' if not specified
                  // No need to explicitly set thinkingBudget unless disabling it.
-            } else if (currentModel.supportsThinkingConfig && activeButton !== 'think' && currentModel.modelIdentifier === 'gemini-2.5-flash-preview-04-17') { 
+            } else if (currentModel.supportsThinkingConfig && activeButton !== 'think' && currentModel.modelIdentifier === 'gemini-2.5-flash-preview-04-17') {
                  config.thinkingConfig = { thinkingBudget: 0 }; // Disable thinking if not 'think' mode for flash model
             }
 
@@ -605,7 +583,7 @@ export default function ChatInterface() {
             if (currentModel.supportsDeepSearch && activeButton === 'deepSearch') {
                 config.tools = [{googleSearch: {}}];
             }
-            
+
             // Ensure the model identifier is correct based on guidelines
             const modelToUse = currentModel.modelIdentifier === 'gemini-2.5-pro-exp-03-25' ? 'gemini-2.5-flash-preview-04-17' : currentModel.modelIdentifier;
 
@@ -679,7 +657,7 @@ export default function ChatInterface() {
                  const errorData = await response.json().catch(() => ({ message: response.statusText }));
                  throw new Error(`Cohere API Error: ${response.status} ${errorData.message || ''}`);
             }
-            
+
             for await (const event of streamJSONLines(response)) {
                 if (stopStreamingRef.current) break;
                 if (event.event_type === 'text-generation' && event.text) {
@@ -713,7 +691,7 @@ export default function ChatInterface() {
         setIsStreaming(false);
         setStreamingMessageId(null);
         shouldFocusAfterStreamingRef.current = true;
-        stopStreamingRef.current = false; 
+        stopStreamingRef.current = false;
     }
   };
 
@@ -733,18 +711,18 @@ export default function ChatInterface() {
     }
   }
 
-  const handleSubmit = (e?: React.FormEvent) => { 
+  const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const currentModel = AVAILABLE_MODELS.find(m => m.id === activeModelId) || AVAILABLE_MODELS[0];
-    
+
     const attachmentsForMessage: Attachment[] = currentModel.supportsImages ? [...filePreviews] : [];
     if ((inputValue.trim() || attachmentsForMessage.length > 0) && !isStreaming) {
       if (navigator.vibrate) navigator.vibrate(30);
-      
+
       const userMessageContent = inputValue.trim();
-      
+
       const shouldAddNewSection = messages.length > 0
-      const newUserMessage: Message = { 
+      const newUserMessage: Message = {
         id: `user-${Date.now()}`,
         content: userMessageContent,
         type: "user",
@@ -752,22 +730,22 @@ export default function ChatInterface() {
         attachments: attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined,
         modelId: currentModel.id // Tag message with current model
       }
-      
+
       const allMessagesIncludingNew: Message[] = [...messages, newUserMessage];
-      
+
       setInputValue("")
       setHasTyped(false)
-      setSelectedFiles([]); 
-      setFilePreviews([]); 
+      setSelectedFiles([]);
+      setFilePreviews([]);
       // Do not reset activeButton here, user might want to keep DeepSearch/Think active
-      // setActiveButton("none") 
-      if (textareaRef.current) textareaRef.current.style.height = "24px" 
-      
+      // setActiveButton("none")
+      if (textareaRef.current) textareaRef.current.style.height = "24px"
+
       setMessages((prev) => [...prev, newUserMessage]);
 
       if (!isMobile) focusTextarea()
       else if (textareaRef.current) textareaRef.current.blur()
-      
+
       generateApiResponse(allMessagesIncludingNew, currentModel);
     }
   }
@@ -788,7 +766,7 @@ export default function ChatInterface() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { 
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       if (!isStreaming) handleSubmit(e as any);
       return;
@@ -799,7 +777,7 @@ export default function ChatInterface() {
     }
   }
 
-  const toggleButton = (button: ActiveButton) => { 
+  const toggleButton = (button: ActiveButton) => {
     if (!isStreaming) {
       saveSelectionState()
       setActiveButton((prev) => (prev === button ? "none" : button))
@@ -811,10 +789,10 @@ export default function ChatInterface() {
     try {
       await navigator.clipboard.writeText(content);
       setCopiedMessageId(messageId);
-      if (navigator.vibrate) navigator.vibrate(20); 
+      if (navigator.vibrate) navigator.vibrate(20);
       setTimeout(() => {
         setCopiedMessageId(null);
-      }, 1500); 
+      }, 1500);
     } catch (err) {
       console.error("Failed to copy text: ", err);
       alert("Failed to copy text.");
@@ -839,11 +817,11 @@ export default function ChatInterface() {
           const reader = new FileReader();
           reader.onloadend = () => {
             const fileId = `file-${Date.now()}-${Math.random()}`;
-            newPreviews.push({ 
-              id: fileId, 
-              name: file.name, 
-              type: file.type, 
-              dataUrl: reader.result as string 
+            newPreviews.push({
+              id: fileId,
+              name: file.name,
+              type: file.type,
+              dataUrl: reader.result as string
             });
             newSelectedFiles.push(file);
             if (newPreviews.length === filesArray.filter(f => f.type.startsWith("image/")).length) {
@@ -876,26 +854,26 @@ export default function ChatInterface() {
     const modelForRegeneration = AVAILABLE_MODELS.find(m => m.id === originalModelId) || selectedModel;
 
     if (aiMessageIndex > 0 && messages[aiMessageIndex -1].type === 'user') {
-      
-      const historyEndIndex = aiMessageIndex -1; 
+
+      const historyEndIndex = aiMessageIndex -1;
       const messagesForRegeneration = messages.slice(0, historyEndIndex + 1);
-      
+
       setMessages(prevMessages => prevMessages.filter(msg => msg.id !== systemMessageToRegenerateId));
       setCompletedMessages(prev => {
         const newSet = new Set(prev);
         newSet.delete(systemMessageToRegenerateId);
         return newSet;
       });
-      
+
       if (navigator.vibrate) navigator.vibrate(30);
 
       if (messagesForRegeneration.length > 0) {
         generateApiResponse(messagesForRegeneration, modelForRegeneration);
       } else {
          console.warn("No content to send to API for regeneration.");
-          setMessages((prev) => [ 
+          setMessages((prev) => [
             ...prev,
-            messages.find(m => m.id === systemMessageToRegenerateId)!, 
+            messages.find(m => m.id === systemMessageToRegenerateId)!,
             { id: `error-${Date.now()}`, content: "Error: Cannot regenerate empty history.", type: "system", completed: true },
         ]);
 
@@ -908,7 +886,7 @@ export default function ChatInterface() {
   const handleModelSelect = (modelId: string) => {
     setActiveModelId(modelId);
     // Reset related states if model changes
-    setActiveButton("none"); 
+    setActiveButton("none");
     if (!AVAILABLE_MODELS.find(m => m.id === modelId)?.supportsImages) {
         setFilePreviews([]);
         setSelectedFiles([]);
@@ -953,8 +931,8 @@ export default function ChatInterface() {
         </div>
         {message.type === "system" && isCompleted && (
           <div className="message-actions flex items-center gap-2 px-4 mt-1 mb-2">
-            <button 
-              className="text-gray-400 hover:text-gray-600 transition-colors" 
+            <button
+              className="text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Regenerate response"
               onClick={() => handleRegenerateResponse(message.id)}
               disabled={isStreaming}
@@ -987,7 +965,7 @@ export default function ChatInterface() {
       </div>
     )
   }
-  
+
   const shouldApplyHeight = (sectionIndex: number) => {
     return sectionIndex > 0;
   };
@@ -1004,8 +982,8 @@ export default function ChatInterface() {
             <Menu className="h-5 w-5 text-gray-700" />
             <span className="sr-only">Menu</span>
           </button>
-          
-          <div 
+
+          <div
             className="relative flex-grow flex justify-center items-center"
             ref={modelDropdownRef}
           >
@@ -1071,14 +1049,14 @@ export default function ChatInterface() {
           <div ref={messagesEndRef} />
         </div>
       </div>
-      
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        multiple 
-        accept="image/*" 
-        className="hidden" 
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        multiple
+        accept="image/*"
+        className="hidden"
         aria-hidden="true"
         disabled={!selectedModel.supportsImages || isStreaming}
       />
@@ -1116,8 +1094,8 @@ export default function ChatInterface() {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onFocus={() => {
-                  if (textareaRef.current && isMobile) { 
-                    setTimeout(() => { 
+                  if (textareaRef.current && isMobile) {
+                    setTimeout(() => {
                         textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }, 300);
                   }
@@ -1174,10 +1152,10 @@ export default function ChatInterface() {
                   aria-label={isStreaming ? "Stop generating response" : "Send message"}
                 >
                   {isStreaming ? (
-                    <Square 
-                      className={cn("lucide-icon", "submit-button-icon-active")} 
+                    <Square
+                      className={cn("lucide-icon", "submit-button-icon-active")}
                       fill="white"
-                      size={10} 
+                      size={10}
                     />
                   ) : (
                     <ArrowUp className={cn("lucide-icon", (hasTyped || (filePreviews.length > 0 && selectedModel.supportsImages)) ? "submit-button-icon-active" : "submit-button-icon-inactive")} />
